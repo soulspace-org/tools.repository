@@ -9,7 +9,7 @@ Usage
 
 Copyright
 ---------
-© 2021 Ludger Solbach
+© 2021-2023 Ludger Solbach
 
 License
 -------
@@ -17,4 +17,4 @@ License
 
 Code Repository
 ---------------
-[CljDevTools](https://github.com/lsolbach/CljDevTools)
+[CljDevTools](https://github.com/soulspace-org/tools.repository)
