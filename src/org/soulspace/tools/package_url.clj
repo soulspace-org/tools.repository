@@ -54,6 +54,9 @@
 (defn parse-qualifiers
   "Returns a map of qualifiers for the qualifier part of the package url."
   [s]
+  (->> s
+      #(str/split % #"&")
+      (map #(str/split % #"=")))
   )
 
 (defn parse-optional
@@ -78,6 +81,7 @@
   (when (str/starts-with? s "pkg:")
     (let [parts (str/split (sstr/substring 4 s) #"\?#")
           [_ type namespace name version] (first parts)]
+      (merge {:type type :namespace namespace :name name :version version} (parse-optional (rest parts)))
       ))
   )
 
