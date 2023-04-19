@@ -11,10 +11,12 @@ target/
 **/pom.xml
 
 ## VS Code
+.vscode/
 .calva/
 .lsp/
 .cpcache/
 .clj-kondo/
+.portal/
 
 ## Eclipse
 bin/

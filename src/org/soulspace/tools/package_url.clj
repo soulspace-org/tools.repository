@@ -11,7 +11,9 @@
 ;;;;
 
 (ns org.soulspace.tools.package-url
-  (:require [clojure.spec.alpha :as s])
+  (:require [clojure.spec.alpha :as s]
+            [clojure.string :as str]
+            [org.soulspace.clj.string :as sstr])
   (:import [java.net URLDecoder URLEncoder])
   )
 
@@ -23,14 +25,8 @@
 ;;; see https://github.com/package-url/purl-spec
 ;;;
 
-; TODO add correct qualifiers and subpath expressions
-; TODO validate/test regex
-(def purl-regex #"^pkg:([a-z]+[a-z0-9._-]*){1,1}
-                  (/[a-z]+[a-z0-9._-]*){0,1}
-                  /([a-z]+[a-z0-9._-]*){1,1}
-                  (@([a-z]+[a-z0-9._-]*){1,1}){0,1}
-                  (\?(([a-z]+[a-z0-9._-]*){1,1}=([a-z]+[a-z0-9._-]*){1,1})){0,1}
-                  (#){0,1}")
+(def artifact-regex #"^([a-zA-Z]+[a-zA-Z0-9._-]*)(?:/([a-zA-Z]+[a-zA-Z0-9._-]*))?/([a-zA-Z]+[a-zA-Z0-9._-]*)(?:@([a-zA-Z0-9]+[a-zA-Z0-9._-]*))?$")
+
 ;(def type-regex #"")
 
 ;(s/def ::scheme (s/and string? #(= % "pkg")))
@@ -55,28 +51,87 @@
   [s]
   (URLEncoder/encode s))
 
+(defn parse-qualifiers
+  "Returns a map of qualifiers for the qualifier part of the package url."
+  [s]
+  )
+
+(defn parse-optional
+  "Returns a map of the optional qualifiers and "
+  [coll]
+  (cond
+    (= 1 (count coll))
+    (if (str/index-of (first coll) "=")
+      {:qualifiers (parse-qualifiers (first coll))}
+      {:path (first coll)})
+
+    (= 2 (count coll))
+    {:qualifiers (parse-qualifiers (first coll))
+     :path (second coll)}
+    
+    :else {}))
+
 (defn parse
   "Parses the string into package url."
   [s]
   ; TODO use regex or grammar
+  (when (str/starts-with? s "pkg:")
+    (let [parts (str/split (sstr/substring 4 s) #"\?#")
+          [_ type namespace name version] (first parts)]
+      ))
   )
 
 (defn generate
   "Generates the URL string for the package URL."
-  [purl]
-  (str "pkg:"
-       (:type purl)
-       (when (:namespace purl)
-         (str "/" (:namespace purl)))
-       "/" (:name purl)
-       (when (:version purl)
-         (str "@" (:version purl)))
-       (when (:qualifiers purl)
-         (str "?" ; TODO k=v joined by "&"
-              ))
-       ))
+  ([purl]
+   (str "pkg:"
+        (:type purl)
+        (when (:namespace purl)
+          (str "/" (:namespace purl)))
+        "/" (:name purl)
+        (when (:version purl)
+          (str "@" (:version purl)))
+        (when (:qualifiers purl)
+          (str "?" ; TODO k=v joined by "&"
+               )))))
 
 (comment
+  (sstr/substring 4 "pkg:maven/clj.base@0.8.3")
+  (str/split "maven/clj.base@0.8.3?k=v&l=w#/foo" #"(\?|#)")
+  (str/split "maven/clj.base@0.8.3?k=v&l=w" #"(\?|#)") 
+  (str/split "maven/clj.base@0.8.3#/foo" #"(\?|#)")
+
   (generate {:type "maven" :name "clj.base" :version "0.8.3"})
   (generate {:type "maven" :namespace "org.soulspace.clj" :name "clj.base" :version "0.8.3"})
+  (re-matches artifact-regex "maven/clj.base@0.8.3")
+  (re-matches artifact-regex "maven/org.soulspace.clj/clj.base@0.8.3")
+
+  "pkg:bitbucket/birkenfeld/pygments-main@244fd47e07d1014f0aed9c"
+
+  "pkg:deb/debian/curl@7.50.3-1?arch=i386&distro=jessie"
+
+  "pkg:docker/cassandra@sha256:244fd47e07d1004f0aed9c"
+  "pkg:docker/customer/dockerimage@sha256:244fd47e07d1004f0aed9c?repository_url=gcr.io"
+
+  "pkg:gem/jruby-launcher@1.1.2?platform=java"
+  "pkg:gem/ruby-advisory-db-check@0.12.4"
+
+  "pkg:github/package-url/purl-spec@244fd47e07d1004f0aed9c"
+
+  "pkg:golang/google.golang.org/genproto#googleapis/api/annotations"
+
+  "pkg:maven/org.apache.xmlgraphics/batik-anim@1.9.1?packaging=sources"
+  "pkg:maven/org.apache.xmlgraphics/batik-anim@1.9.1?repository_url=repo.spring.io%2Frelease"
+
+  "pkg:npm/%40angular/animation@12.3.1"
+  "pkg:npm/foobar@12.3.1"
+
+  "pkg:nuget/EnterpriseLibrary.Common@6.0.1304"
+
+  "pkg:pypi/django@1.11.1"
+
+  "pkg:rpm/fedora/curl@7.50.3-1.fc25?arch=i386&distro=fedora-25"
+  "pkg:rpm/opensuse/curl@7.56.1-1.1.?arch=i386&distro=opensuse-tumbleweed"
+
   )
+
