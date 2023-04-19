@@ -19,7 +19,7 @@
             [org.httpkit.client :as http]
             [org.soulspace.clj.string :as sstr]
             [org.soulspace.clj.namespace :as nsp]
-            [org.soulspace.clj.file :as file]
+            [org.soulspace.clj.java.file :as file]
             [org.soulspace.clj.property-replacement :as prop]
             [org.soulspace.tools.maven-xml :as mvnx]))
 

@@ -12,7 +12,6 @@
 
 (ns org.soulspace.tools.maven-xml-parser)
 
-
 ;;;
 ;;; maven pom parsing
 ;;;
