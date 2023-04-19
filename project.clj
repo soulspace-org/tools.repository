@@ -11,7 +11,8 @@
 
   :test-paths ["test"]
 
-  :profiles {:dev {:dependencies [[djblue/portal "0.37.1"]
+  :profiles {:dev {:dependencies [[org.clojure/test.check "1.1.1"]
+                                  [djblue/portal "0.37.1"]
                                   [criterium "0.4.6"]]
                    :global-vars {*warn-on-reflection* true}}}
 
