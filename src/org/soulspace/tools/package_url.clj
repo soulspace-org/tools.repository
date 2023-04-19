@@ -55,34 +55,31 @@
   "Returns a map of qualifiers for the qualifier part of the package url."
   [s]
   (->> s
-      #(str/split % #"&")
-      (map #(str/split % #"=")))
-  )
+       (#(str/split % #"&"))
+       (map #(str/split % #"="))
+       (into {})))
 
 (defn parse-optional
   "Returns a map of the optional qualifiers and "
   [coll]
   (cond
-    (= 1 (count coll))
-    (if (str/index-of (first coll) "=")
-      {:qualifiers (parse-qualifiers (first coll))}
-      {:path (first coll)})
-
-    (= 2 (count coll))
-    {:qualifiers (parse-qualifiers (first coll))
-     :path (second coll)}
-    
+    (= 0 (count coll)) {}
+    (= 1 (count coll)) (if (str/index-of (first coll) "=")
+                         {:qualifiers (parse-qualifiers (first coll))}
+                         {:subpath (first coll)})
+    (= 2 (count coll)) {:qualifiers (parse-qualifiers (first coll))
+                        :subpath (second coll)}
     :else {}))
 
 (defn parse
   "Parses the string into package url."
   [s]
-  ; TODO use regex or grammar
   (when (str/starts-with? s "pkg:")
-    (let [parts (str/split (sstr/substring 4 s) #"\?#")
-          [_ type namespace name version] (first parts)]
-      (merge {:type type :namespace namespace :name name :version version} (parse-optional (rest parts)))
-      ))
+    (let [parts (str/split (sstr/substring 4 s) #"(\?|#)")
+          _ (println parts)
+          [_ type namespace name version] (re-matches artifact-regex (first parts))]
+      (merge {:type type :namespace namespace :name name :version version}
+             (parse-optional (rest parts)))))
   )
 
 (defn generate
@@ -97,18 +94,28 @@
           (str "@" (:version purl)))
         (when (:qualifiers purl)
           (str "?" ; TODO k=v joined by "&"
-               )))))
+               (map (fn [[k v]] (str k "=" v)) (:qualifiers purl))))
+        (when (:subpath purl)
+          (str "#" (:subpath purl))))))
 
 (comment
   (sstr/substring 4 "pkg:maven/clj.base@0.8.3")
   (str/split "maven/clj.base@0.8.3?k=v&l=w#/foo" #"(\?|#)")
-  (str/split "maven/clj.base@0.8.3?k=v&l=w" #"(\?|#)") 
+  (str/split "maven/clj.base@0.8.3?k=v&l=w" #"(\?|#)")
   (str/split "maven/clj.base@0.8.3#/foo" #"(\?|#)")
+  (str/split (sstr/substring 4 "pkg:maven/clj.base@0.8.3?k=v&l=w#/foo") #"(\?|#)")
 
   (generate {:type "maven" :name "clj.base" :version "0.8.3"})
   (generate {:type "maven" :namespace "org.soulspace.clj" :name "clj.base" :version "0.8.3"})
   (re-matches artifact-regex "maven/clj.base@0.8.3")
   (re-matches artifact-regex "maven/org.soulspace.clj/clj.base@0.8.3")
+  (parse-qualifiers "k=v&l=w")
+  (parse-optional ["k=v&l=w"])
+  (parse-optional ["path"])
+  (parse-optional ["k=v&l=w" "path"])
+
+  (parse "pkg:maven/clj.base@0.8.3?k=v&l=w#/foo")
+  (parse "pkg:maven/org.apache.xmlgraphics/batik-anim@1.9.1?repository_url=repo.spring.io%2Frelease")
 
   "pkg:bitbucket/birkenfeld/pygments-main@244fd47e07d1014f0aed9c"
 

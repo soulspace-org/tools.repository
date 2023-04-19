@@ -16,11 +16,9 @@
 
 (deftest parse-test
   (are [x y] (= x y)
-    
-    ))
+    {:type "maven" :name "clj.base" :version "0.8.3"} (parse "pkg:maven/clj.base@0.8.3")))
 
 (deftest generate-test
   (are [x y] (= x y)
-    (generate {:type "maven" :name "clj.base" :version "0.8.3"}) "pkg:maven/clj.base@0.8.3"))
-
+    "pkg:maven/clj.base@0.8.3" (generate {:type "maven" :name "clj.base" :version "0.8.3"})))
 
