@@ -11,7 +11,8 @@
 ;;;;
 
 (ns org.soulspace.tools.project-info
-  (:require [clojure.data.json :as json]
+  (:require [clojure.java.io :as io]
+            [clojure.data.json :as json]
             [clojure.data.xml :as xml]))
 
 ;;;;
@@ -73,14 +74,32 @@
 (defn openhub-projects-xml
   "Fetches the projects from openhub.net."
   []
-  (-> (slurp (str openhub-root "/projects.xml"))
-      (xml/parse)))
+  (slurp (str openhub-root "/projects.xml"))
+;  (-> (slurp (str openhub-root "/projects.xml"))
+;      (xml/parse))
+  )
 
 (defn openhub-project-xml
   "Fetches the project from openhub.net."
   [id]
-  (-> (slurp (str openhub-root "/projects/" id ".xml"))
-      (xml/parse)))
+  (with-open [rdr (io/reader (slurp (str openhub-root "/projects/" id ".xml")))]
+      (doall (xml/parse rdr))))
+
+(comment
+ (defn openhub-projects-xml
+  "Fetches the projects from openhub.net."
+  []
+  (with-open [input (io/input-stream
+                     (io/as-url (str openhub-root "/projects.xml")))]
+      (doall (xml/parse input))))
+
+(defn openhub-project-xml
+  "Fetches the project from openhub.net."
+  [id]
+  (with-open [input (io/input-stream
+                     (io/as-url (str openhub-root "/projects/" id ".xml")))]
+    (doall (xml/parse input))))
+)
 
 (comment
   (openhub-projects-xml))

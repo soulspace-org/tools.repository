@@ -14,8 +14,7 @@
   (:require [clojure.spec.alpha :as s]
             [clojure.string :as str]
             [org.soulspace.clj.string :as sstr])
-  (:import [java.net URLDecoder URLEncoder])
-  )
+  (:import [java.net URLDecoder URLEncoder]))
 
 ;;;;
 ;;;; Package URL handling
@@ -29,10 +28,10 @@
 
 ;(def type-regex #"")
 
-;(s/def ::scheme (s/and string? #(= % "pkg")))
+(s/def ::scheme (s/and string? #(= % "pkg")))
 (s/def ::type string?)
-(s/def ::name string?)
 (s/def ::namespace string?)
+(s/def ::name string?)
 (s/def ::version string?)
 (s/def ::qualifiers map?)
 (s/def ::subpath string?)
@@ -40,6 +39,15 @@
 (s/def ::package-url
        (s/keys :req-un [::type ::name]
                :opt-un [::namespace ::version ::qualifiers ::subpath]))
+
+(comment
+  (s/explain ::package-url {:type "maven"})
+  (s/conform ::package-url {:type "maven"})
+  (s/explain ::package-url {:type "maven" :name "clj.base"})
+  (s/conform ::package-url {:type "maven" :name "clj.base"})
+  (s/explain ::package-url {:type "maven" :version "0.8.3"})
+  (s/conform ::package-url {:type "maven" :version "0.8.3"})
+  )
 
 (defn url-decode
   "Returns the URL decoded string."
@@ -71,6 +79,10 @@
                         :subpath (second coll)}
     :else {}))
 
+(s/fdef parse
+  :args (s/cat :s string?)
+  :ret ::package-url)
+
 (defn parse
   "Parses the string into package url."
   [s]
@@ -82,21 +94,27 @@
              (parse-optional (rest parts)))))
   )
 
+(s/fdef generate
+  :args (s/cat :purl ::package-url)
+  :ret string?)
+
 (defn generate
   "Generates the URL string for the package URL."
   ([purl]
-   (str "pkg:"
-        (:type purl)
-        (when (:namespace purl)
-          (str "/" (:namespace purl)))
-        "/" (:name purl)
-        (when (:version purl)
-          (str "@" (:version purl)))
-        (when (:qualifiers purl)
-          (str "?" ; TODO k=v joined by "&"
-               (map (fn [[k v]] (str k "=" v)) (:qualifiers purl))))
-        (when (:subpath purl)
-          (str "#" (:subpath purl))))))
+   (let [checked (s/conform ::package-url purl)]
+     (if (s/invalid? checked)
+       (throw (ex-info "Invalid input" (s/explain-data ::package-url purl)))
+       (str "pkg:"
+            (:type purl)
+            (when (:namespace purl)
+              (str "/" (:namespace purl)))
+            "/" (:name purl)
+            (when (:version purl)
+              (str "@" (:version purl)))
+            (when (:qualifiers purl)
+              (str "?" (map (fn [[k v]] (str k "=" v)) (:qualifiers purl))))
+            (when (:subpath purl)
+              (str "#" (:subpath purl))))))))
 
 (comment
   (sstr/substring 4 "pkg:maven/clj.base@0.8.3")
@@ -105,6 +123,7 @@
   (str/split "maven/clj.base@0.8.3#/foo" #"(\?|#)")
   (str/split (sstr/substring 4 "pkg:maven/clj.base@0.8.3?k=v&l=w#/foo") #"(\?|#)")
 
+  (generate {:type "maven" :version "0.8.3"})
   (generate {:type "maven" :name "clj.base" :version "0.8.3"})
   (generate {:type "maven" :namespace "org.soulspace.clj" :name "clj.base" :version "0.8.3"})
   (re-matches artifact-regex "maven/clj.base@0.8.3")

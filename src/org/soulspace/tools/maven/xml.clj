@@ -10,10 +10,10 @@
 ;;;;   You must not remove this notice, or any other, from this software.
 ;;;;
 
-(ns org.soulspace.tools.maven-xml
+(ns org.soulspace.tools.maven.xml
   (:require [clojure.java.io :as io]
             [clojure.data.xml :as xml]
-            [org.soulspace.tools.maven-xml-parser :as mvn]))
+            [org.soulspace.tools.maven.xml-parser :as mvn]))
 
 ;;;;
 ;;;; Read and parse Apache Maven xml files
