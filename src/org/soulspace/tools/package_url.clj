@@ -49,6 +49,13 @@
   (s/conform ::package-url {:type "maven" :version "0.8.3"})
   )
 
+(defn clean
+  "Removes keys from map for which the value is nil."
+  [m]
+  (apply dissoc
+         m
+         (for [[k v] m :when (nil? v)] k)))
+
 (defn url-decode
   "Returns the URL decoded string."
   [s]
@@ -84,22 +91,23 @@
   :ret ::package-url)
 
 (defn parse
-  "Parses the string into package url."
-  [s]
-  (when (str/starts-with? s "pkg:")
-    (let [parts (str/split (sstr/substring 4 s) #"(\?|#)")
-          _ (println parts)
-          [_ type namespace name version] (re-matches artifact-regex (first parts))]
-      (merge {:type type :namespace namespace :name name :version version}
-             (parse-optional (rest parts)))))
-  )
+  "Parses the package URL string into a package URL map."
+  [purl]
+  (let [;s (url-decode purl)
+        s purl]
+    (when (str/starts-with? s "pkg:")
+      (let [parts (str/split (sstr/substring 4 s) #"(\?|#)")
+            _ (println parts)
+            [_ type namespace name version] (re-matches artifact-regex (first parts))]
+        (merge (clean {:type type :namespace namespace :name name :version version})
+               (parse-optional (rest parts)))))))
 
 (s/fdef generate
   :args (s/cat :purl ::package-url)
   :ret string?)
 
 (defn generate
-  "Generates the URL string for the package URL."
+  "Generates the package URL string for the package URL map."
   ([purl]
    (let [checked (s/conform ::package-url purl)]
      (if (s/invalid? checked)

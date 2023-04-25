@@ -5,6 +5,8 @@ v0.3.7
 ------
 * added handling of package urls (work in progress)
 * added handling of transitive dependencies (work in progress)
+* added protocols for repositories
+* moved maven repository implementation into maven folder
 
 v0.3.6
 ------

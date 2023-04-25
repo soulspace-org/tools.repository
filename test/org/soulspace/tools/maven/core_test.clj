@@ -48,9 +48,9 @@
     (artifact-filename {:group-id "a"
                         :artifact-id "b"
                         :version "1.0"}) "b-1.0.jar"
-    (artifact-filename {:group-id "a"
-                        :artifact-id "b"
-                        :version "1.0"} "pom") "b-1.0.pom"))
+    (artifact-filename  "pom" {:group-id "a"
+                               :artifact-id "b"
+                               :version "1.0"}) "b-1.0.pom"))
 
 (deftest artifact-url-test
   (are [x y] (= x y)

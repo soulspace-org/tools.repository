@@ -496,6 +496,7 @@
   (str "a-" nil "-b")
   (artifact-relative-path {:group-id "a" :artifact-id "b" :version "1.0"})
   (artifact-filename {:group-id "a" :artifact-id "b" :version "1.0"})
+  (artifact-filename  "pom" {:group-id "a" :artifact-id "b" :version "1.0"})
   (artifact-local-path {:group-id "a" :artifact-id "b" :version "1.0"})
   (artifact-url {:id "clojars" :remote "http://repo.clojars.org"}
                 {:group-id "a" :artifact-id "b" :version "1.0"})
