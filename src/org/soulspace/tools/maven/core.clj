@@ -23,11 +23,14 @@
             [org.soulspace.clj.java.file :as file]
             [org.soulspace.clj.property-replacement :as prop]
             [org.soulspace.tools.maven.xml :as mvnx]
-            [org.soulspace.tools.repo :as tr])
-  )
+            [org.soulspace.tools.repo :as repo]))
 
 (s/def ::repository (s/keys :req-un [::id ::url ::name]
-                            :opt-un [::username ::password ::releases ::snapshots ::layout]))
+                            :opt-un [::username ::password ::releases? ::snapshots? ::layout]))
+
+(s/def ::artifact (s/keys :req-un [::artifact-id]
+                          :opt-un [::group-id ::version]))
+
 
 (def user-home (System/getProperty "user.home"))
 (def local-repository (str user-home "/.m2/repository"))
@@ -124,11 +127,39 @@
      (io/copy (io/input-stream url)
               (io/as-file (str local-path "/" (artifact-filename classifier extension a)))))))
 
+(defn cache-artifact
+  "Caches the artifact a by downloading it from the repository and
+   storing it in the local repository cache.
+   Takes classifier and extension as an optional parameter."
+  ([repo a]
+   (cache-artifact repo nil "jar" a))
+  ([repo extension a]
+   (cache-artifact repo nil extension a))
+  ([repo classifier extension a]
+   (if (remote-artifact? repo classifier extension a)
+     (do ; TODO download checksums and common classified artifacts too
+           ; (println "downloading from repo" (:name repo))
+       (download-artifact repo "pom" a)
+       (download-artifact repo classifier extension a)
+       true)
+     false)))
+
 (defn artifact-versions
   ""
   [repo a]
 ; TODO extract versions
   )
+
+(defrecord MavenRepository [id url name snapshots? releases? layout username password]
+  repo/Repository
+  (get-package [this artifact])
+  repo/CachingRepository
+  (cached? [this artifact] (local-artifact? artifact))
+  (cache-package [this artifact])
+  repo/VersionedRepository
+  (versions [this artifact])
+  (latest-version [this artifact]))
+
 
 ;;
 ;; repositories
@@ -151,7 +182,7 @@
   {:pre [(s/valid? ::repository repo)]}
   (swap! repositories conj repo))
 
-(defn cache-artifact
+(defn cache-artifact-from-repos
   "Downloads and caches an artifact including it's associated pom."
   ([a]
    (cache-artifact nil "jar" a))
@@ -161,11 +192,8 @@
    ; (println "caching artifact" (artifact-filename classifier extension a))
    (loop [repos @repositories]
      (when-let [repo  (first repos)]
-       (if (remote-artifact? repo classifier extension a)
-         (do ; TODO download checksums and common classified artifacts too
-           ; (println "downloading from repo" (:name repo))
-           (download-artifact repo "pom" a)
-           (download-artifact repo classifier extension a))
+       (if (cache-artifact repo classifier extension a)
+         true
          (recur (rest repos)))))))
 
 (defn read-artifact-pom
@@ -184,7 +212,7 @@
 (defn managed-versions
   "Transforms the dependency manangement list into a map of artifact keys to versions."
   [pom]
-  (into {} (map #(vector (tr/artifact-key %) (:version %))
+  (into {} (map #(vector (repo/artifact-key %) (:version %))
                 (managed-dependencies pom))))
 
 (defn merge-build-section
@@ -321,6 +349,7 @@
 ; Cache calls, TODO: use real cache
 ; (def pom-for-artifact (memoize pom-for-artifact))
 
+
 ;;;
 ;;; dependencies
 ;;;
@@ -342,7 +371,7 @@
   [p s]
   (if (and p s)
     (if (str/ends-with? p "*") ; star pattern
-      (str/starts-with? s (sstr/substring 0 (- (count p) 1) p))
+      (str/starts-with? s (subs p 0 (- (count p) 1)))
       (= p s))
     false))
 
@@ -361,13 +390,13 @@
 (defn resolved?
   "Checks, if the artifact is already part of the resolved set."
   [resolved dep]
-  (contains? resolved (tr/artifact-key dep))) ; TODO artifack-version-key?
+  (contains? resolved (repo/artifact-key dep))) ; TODO artifack-version-key?
 
 (defn cycle?
   "Checks, if the artifact produces a cycle."
   [path dep]
   ; path is a vector so use some instead of contains?
-  (some #(= (tr/artifact-version-key dep) %) path))
+  (some #(= (repo/artifact-version-key dep) %) path))
 
 (defn excluded?
   "Checks if the dependency is part of the excluded set."
@@ -385,7 +414,7 @@
 (defn exclude-artifact
   "Returns the exclusions collection with the artifact key added."
   [exclusions a]
-  (let [k (tr/artifact-key a)]
+  (let [k (repo/artifact-key a)]
     (if (contains? exclusions k)
       exclusions ; artifact key already contained
       (conj exclusions k) ; not contained, add artifact key 
@@ -395,7 +424,7 @@
   "Returns the dependency with version filled in from "
   [dm dependency]
   (if (nil? (:version dependency))
-    (assoc dependency :version (dm (tr/artifact-key dependency)))
+    (assoc dependency :version (dm (repo/artifact-key dependency)))
     dependency))
 
 (defn exclusion-set
@@ -403,7 +432,7 @@
   [e]
   ;(println "Exclusion list: " e)
   (if (seq e)
-    (into #{} (map tr/artifact-key) e)
+    (into #{} (map repo/artifact-key) e)
     #{}))
 
 (defn dependency-key
@@ -434,13 +463,12 @@
     :type (:type a)
     :system-path (:system-path a)}))
 
-
 ; transitive dependency resolution with depth first search
 ; build up exclusions on the way down and inclusions on the way up
 (defn resolve-dependencies
   "Resolves the (transitive) dependencies of the artifact."
   ([a]
-   (println "resolve dependencies for artifact" (tr/artifact-version-key a))
+   (println "resolve dependencies for artifact" (repo/artifact-version-key a))
    (build-dependency-node a))
   ([d path exclusions]
    (let [pom (pom-for-artifact d)
@@ -462,11 +490,11 @@
   ([dep]
    (let [pom (pom-for-artifact dep)]
      (print-deps pom (:dependencies pom)
-                 [(tr/artifact-version-key dep)]
+                 [(repo/artifact-version-key dep)]
                  (exclusion-set (get-in pom [:dependencies :exclusions]))
                  0)))
   ([pom dependencies path exclusions indent]
-   (println "Called for" (tr/artifact-version-key pom))
+   (println "Called for" (repo/artifact-version-key pom))
    ; (println "Path" (str/join "->" path))
    ; (println "DM: " (managed-dependencies pom))
    (let [dm (managed-versions pom)] ; normalize versions
@@ -479,13 +507,13 @@
              (if (cycle? path dep)
                (println "Cycle:"
                         (str/join " -> " path)
-                        "->" (tr/artifact-version-key dep))
+                        "->" (repo/artifact-version-key dep))
                (if (excluded? e dep)
                  (println "Excluded:" dep)
                  (if-not (follow? dep)
                    (println "Not followed:" dep)
                    (print-deps dep (:dependencies dpom)
-                               (conj path (tr/artifact-version-key dep))
+                               (conj path (repo/artifact-version-key dep))
                                (set/union e (exclusion-set (:exclusions dep)))
                                (inc indent)))))
              (recur (rest deps) p e))
@@ -542,5 +570,6 @@
   (print-deps {:group-id "org.apache.spark" :artifact-id "spark-core_2.12"
                :version "3.2.1"})
   (merge-poms {:dependency-management {:dependencies [{:group-id "a" :artifact-id "b" :version "1"}]}}
-              {:dependency-management {:dependencies [{:group-id "c" :artifact-id "d" :version "2"}]}}))
+              {:dependency-management {:dependencies [{:group-id "c" :artifact-id "d" :version "2"}]}})
+)
 
