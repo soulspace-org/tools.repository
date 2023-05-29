@@ -14,14 +14,15 @@
                  [org.clojure/data.json "2.4.0"]
                  [org.clojure/data.csv "1.0.1"]
                  [http-kit/http-kit "2.5.3"]
-                 [org.soulspace.clj/clj.java "0.9.1"]
-  ]
+                 [org.soulspace.clj/clj.java "0.9.1"]]
   
   :test-paths ["test"]
 
   :profiles {:dev {:dependencies [[org.clojure/test.check "1.1.1"]
                                   [djblue/portal "0.37.1"]
-                                  [criterium "0.4.6"]]
+                                  [criterium "0.4.6"]
+                                  [com.clojure-goes-fast/clj-java-decompiler "0.3.4"]
+                                  [expound/expound "0.9.0"]]
                    :global-vars {*warn-on-reflection* true}}}
 
   :scm {:name "git" :url "https://github.com/soulspace-org/tools.repository"}
