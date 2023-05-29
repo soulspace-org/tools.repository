@@ -13,6 +13,7 @@
                  [org.clojure/data.zip "1.0.0"]
                  [org.clojure/data.json "2.4.0"]
                  [org.clojure/data.csv "1.0.1"]
+                 [org.clojure/data.xml "0.0.8"]
                  [http-kit/http-kit "2.5.3"]
                  [org.soulspace.clj/clj.java "0.9.1"]]
   

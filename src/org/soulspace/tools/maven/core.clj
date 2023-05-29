@@ -532,11 +532,11 @@
                          {:group-id "a" :artifact-id "b" :version "1.0"})
   (local-artifact? {:group-id "org.soulspace.clj" :artifact-id "clj.base"
                     :version "0.8.3"})
-  (download-artifact {:id "clojars" :remote "http://repo.clojars.org"
+  (download-artifact {:id "clojars" :url "http://repo.clojars.org"
                       :local "/home/soulman/tmp/repository"}
                      {:group-id "org.soulspace.clj" :artifact-id "clj.base"
                       :version "0.8.3"})
-  (cache-artifact {:id "clojars" :remote "http://repo.clojars.org"
+  (cache-artifact {:id "clojars" :url "http://repo.clojars.org"
                    :local "/home/soulman/tmp/repository"}
                   {:group-id "org.soulspace.clj" :artifact-id "clj.base"
                    :version "0.8.3"})
@@ -557,8 +557,6 @@
   @(http/request {:url "http://repo.clojars.org/org/soulspace/clj/clj.base/"
                   :method :head
                   :timeout 500})
-  (resolve-dependencies {:group-id "org.soulspace.clj" :artifact-id "clj.base"
-                         :version "0.8.3"})
   (resolve-dependencies {:group-id "org.soulspace.clj" :artifact-id "clj.base"
                          :version "0.8.3"})
   (cycle? ["org.scalatest/scalatest_2.12[3.2.9]" "org.scala-lang/scala-compiler[2.12.13]"
