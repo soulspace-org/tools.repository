@@ -10,10 +10,10 @@
 ;;;;   You must not remove this notice, or any other, from this software.
 ;;;;
 
-(ns org.soulspace.tools.maven-xml
+(ns org.soulspace.tools.maven.xml
   (:require [clojure.java.io :as io]
             [clojure.data.xml :as xml]
-            [org.soulspace.tools.maven-xml-parser :as mvn]))
+            [org.soulspace.tools.maven.xml-parser :as mvn]))
 
 ;;;;
 ;;;; Read and parse Apache Maven xml files
@@ -66,9 +66,8 @@
        </dependencies>
      </dependencyManagement>
      </project>"))
-  )
-(comment
   (read-pom-xml "/home/soulman/tmp/repository/org/soulspace/clj/clj.base/0.8.3/clj.base-0.8.3.pom")
   (read-settings-xml "/home/soulman/.m2/settings.xml")
   (read-metadata-xml "/home/soulman/.m2/repository/org/soulspace/clj/clj.base/maven-metadata-clojars.xml")
   )
+

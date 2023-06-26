@@ -158,55 +158,13 @@
     (same-artifact-version? {:group-id "a" :artifact-id "b" :version "1.0"}
                             {:group-id "a" :artifact-id "b" :version "1.0"}) true))
 
-;;;
-;;; tests for dependencies
-;;;
-
-;;;
-;;; tests for repositories
-;;;
-
-(deftest artifact-path-test
+(deftest parse-test
   (are [x y] (= x y)
-    (artifact-relative-path {:group-id "a"
-                             :artifact-id "b"
-                             :version "1.0"}) "a/b"
-    (artifact-relative-path {:group-id "a"
-                             :artifact-id "b.c"
-                             :version "1.0"}) "a/b.c"
-    (artifact-relative-path {:group-id "a.d"
-                             :artifact-id "b.c"
-                             :version "1.0"}) "a/d/b.c"
-    (artifact-version-relative-path {:group-id "a"
-                                     :artifact-id "b"
-                                     :version "1.0"}) "a/b/1.0"
-    (artifact-version-relative-path {:group-id "a"
-                                     :artifact-id "b.c"
-                                     :version "1.0"}) "a/b.c/1.0"
-    (artifact-version-relative-path {:group-id "a.d"
-                                     :artifact-id "b.c"
-                                     :version "1.0"}) "a/d/b.c/1.0"))
+    {:type "maven" :name "clj.base" :version "0.8.3"} (parse "pkg:maven/clj.base@0.8.3")
+    {:type "maven" :namespace "org.soulspace.clj" :name "clj.base" :version "0.8.3"} (parse "pkg:maven/org.soulspace.clj/clj.base@0.8.3")))
 
-(deftest artifact-filename-test
+(deftest generate-test
   (are [x y] (= x y)
-    (artifact-filename {:group-id "a"
-                        :artifact-id "b"
-                        :version "1.0"}) "b-1.0.jar"
-    (artifact-filename {:group-id "a"
-                        :artifact-id "b"
-                        :version "1.0"} "pom") "b-1.0.pom"))
+    "pkg:maven/clj.base@0.8.3" (generate {:type "maven" :name "clj.base" :version "0.8.3"})
+    "pkg:maven/org.soulspace.clj/clj.base@0.8.3" (generate {:type "maven" :namespace "org.soulspace.clj" :name "clj.base" :version "0.8.3"})))
 
-(deftest artifact-url-test
-  (are [x y] (= x y)
-    (artifact-url {:id "clojars" :url "http://repo.clojars.org"}
-                  {:group-id "a" :artifact-id "b" :version "1.0"})
-    "http://repo.clojars.org/a/b/1.0/b-1.0.jar"))
-
-(deftest artifact-metadata-url-test
-  (are [x y] (= x y)
-    (artifact-metadata-url {:id "clojars" :url "http://repo.clojars.org"}
-                           {:group-id "a" :artifact-id "b" :version "1.0"})
-    "http://repo.clojars.org/a/b/maven-metadata.xml"))
-
-(comment
-  (run-tests))
